@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 
 from services.auth_service import AuthService
 
+from flask_jwt_extended import create_access_token
 
 auth_api_bp = Blueprint(
     "auth_api",
@@ -35,11 +36,16 @@ def login():
             "message": "Email and password are required."
         }), 400
 
-
     result = auth_service.login(
         email,
         password
     )
 
+    if result["success"]:
+        access_token = create_access_token(
+            identity=str(result["user"]["id"])
+        )
+
+        result["access_token"] = access_token
 
     return jsonify(result)

@@ -158,6 +158,29 @@ def create_tables():
         )
     """)
 
+    # ---------------- PATIENT PROFESSIONAL TABLE ----------------
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS patient_professional (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+            patient_id INTEGER NOT NULL,
+
+            professional_id INTEGER NOT NULL,
+
+            status TEXT DEFAULT 'active',
+
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+            UNIQUE(patient_id, professional_id),
+
+            FOREIGN KEY(patient_id)
+                REFERENCES patients(id),
+
+            FOREIGN KEY(professional_id)
+                REFERENCES professionals(id)
+        )
+    """)
+
     # ---------------- APPOINTMENTS TABLE ----------------
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS appointments (

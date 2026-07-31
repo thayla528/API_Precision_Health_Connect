@@ -1,10 +1,16 @@
 from flask import Blueprint, request, jsonify
 
+
+
 from services.message_service import MessageService
+
+from flask_jwt_extended import jwt_required, get_jwt_identity
+
 
 message_bp = Blueprint("messages", __name__)
 
 @message_bp.route("/messages", methods=["POST"])
+@jwt_required()
 def send_message():
 
     data = request.get_json()
@@ -16,8 +22,10 @@ def send_message():
             "message": "Nenhum dado enviado."
         }), 400
 
-    sender_id = data.get("sender_id")
+    sender_id = get_jwt_identity()
+
     receiver_id = data.get("receiver_id")
+
     message = data.get("message")
 
     result = MessageService.send_message(
@@ -32,12 +40,24 @@ def send_message():
     return jsonify(result), 400
 
 @message_bp.route("/messages/<int:user_id>", methods=["GET"])
+@jwt_required()
 def get_received_messages(user_id):
+
+    current_user_id = get_jwt_identity()
+
+    if int(current_user_id) != user_id:
+        return jsonify({
+            "success": False,
+            "message": "Acesso não autorizado."
+        }), 403
+
 
     result = MessageService.get_received_messages(user_id)
 
+
     if result["success"]:
         return jsonify(result), 200
+
 
     return jsonify(result), 404
 
@@ -45,15 +65,32 @@ def get_received_messages(user_id):
     "/messages/conversation/<int:user1_id>/<int:user2_id>",
     methods=["GET"]
 )
+@jwt_required()
 def get_conversation(user1_id, user2_id):
+
+    current_user_id = int(get_jwt_identity())
+
+
+    if current_user_id not in [
+        user1_id,
+        user2_id
+    ]:
+        return jsonify({
+            "success": False,
+            "message": "Acesso não autorizado."
+        }), 403
+
 
     result = MessageService.get_conversation(
         user1_id,
         user2_id
     )
 
+
     if result["success"]:
+
         return jsonify(result), 200
+
 
     return jsonify(result), 404
 

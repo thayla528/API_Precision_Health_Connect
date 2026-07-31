@@ -1,6 +1,6 @@
 from database.message_model import MessageModel
 from database.user_model import UserModel
-
+from security.encryption import encrypt_message, decrypt_message
 
 class MessageService:
 
@@ -29,10 +29,12 @@ class MessageService:
                 "message": "Digite uma mensagem."
             }
 
+        encrypted_message = encrypt_message(message)
+
         message_id = MessageModel.send_message(
             sender_id,
             receiver_id,
-            message
+            encrypted_message
         )
 
         return {
@@ -53,6 +55,11 @@ class MessageService:
             }
 
         messages = MessageModel.get_received_messages(user_id)
+
+        for message in messages:
+            message["message"] = decrypt_message(
+                message["message"]
+            )
 
         return {
             "success": True,
@@ -82,6 +89,11 @@ class MessageService:
             user1_id,
             user2_id
         )
+
+        for message in conversation:
+            message["message"] = decrypt_message(
+                message["message"]
+            )
 
         return {
             "success": True,
