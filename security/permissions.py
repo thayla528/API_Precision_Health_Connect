@@ -4,7 +4,7 @@ from flask import jsonify
 
 from flask_jwt_extended import get_jwt_identity
 
-from database.user_model import UserModel
+from database.users.user_model import UserModel
 
 
 def role_required(required_role):

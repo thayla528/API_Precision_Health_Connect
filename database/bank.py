@@ -14,6 +14,54 @@ def create_tables():
     conn = connect()
     cursor = conn.cursor()
 
+    # ---------------- USERS TABLE ----------------
+    cursor.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+                invitation_id INTEGER,
+
+                full_name TEXT NOT NULL,
+
+                email TEXT UNIQUE NOT NULL,
+
+                password TEXT NOT NULL,
+
+                role TEXT NOT NULL DEFAULT 'patient',
+
+                profile_type TEXT NOT NULL,
+
+                profile_photo TEXT,
+
+                active INTEGER DEFAULT 1,
+
+                last_login DATETIME,
+
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+                FOREIGN KEY(invitation_id)
+                    REFERENCES invitations(id)
+            )
+        """)
+
+    # ---------------- ADMINISTRATORS TABLE ----------------
+    cursor.execute("""
+            CREATE TABLE IF NOT EXISTS administrators (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+                user_id INTEGER UNIQUE NOT NULL,
+
+                access_level TEXT DEFAULT 'admin',
+
+                department TEXT,
+
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+                FOREIGN KEY(user_id)
+                    REFERENCES users(id)
+            )
+        """)
+
     # ---------------- INVITATIONS TABLE ----------------
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS invitations (
@@ -46,35 +94,7 @@ def create_tables():
         )
     """)
 
-    # ---------------- USERS TABLE ----------------
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
 
-            invitation_id INTEGER,
-
-            full_name TEXT NOT NULL,
-
-            email TEXT UNIQUE NOT NULL,
-
-            password TEXT NOT NULL,
-            
-            role TEXT NOT NULL DEFAULT 'patient',
-
-            profile_type TEXT NOT NULL,
-
-            profile_photo TEXT,
-
-            active INTEGER DEFAULT 1,
-
-            last_login DATETIME,
-
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-
-            FOREIGN KEY(invitation_id)
-                REFERENCES invitations(id)
-        )
-    """)
 
     # ---------------- PATIENTS TABLE ----------------
     cursor.execute("""
@@ -140,23 +160,7 @@ def create_tables():
         )
     """)
 
-    # ---------------- ADMINISTRATORS TABLE ----------------
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS administrators (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
 
-            user_id INTEGER UNIQUE NOT NULL,
-
-            access_level TEXT DEFAULT 'admin',
-
-            department TEXT,
-
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-
-            FOREIGN KEY(user_id)
-                REFERENCES users(id)
-        )
-    """)
 
     # ---------------- PATIENT PROFESSIONAL TABLE ----------------
     cursor.execute("""
@@ -323,6 +327,47 @@ def create_tables():
 
             FOREIGN KEY(user_id)
                 REFERENCES users(id)
+        )
+    """)
+
+    # ---------------- REVOKED TOKENS TABLE ----------------
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS revoked_tokens (
+
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+            jti TEXT UNIQUE NOT NULL,
+
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+
+        )
+    """)
+
+    # ---------------- AUDIT LOGS TABLE ----------------
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS audit_logs (
+
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+            user_id INTEGER NOT NULL,
+
+            action TEXT NOT NULL,
+
+            table_name TEXT NOT NULL,
+
+            record_id INTEGER NOT NULL,
+
+            old_data TEXT,
+
+            new_data TEXT,
+
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+
+            FOREIGN KEY(user_id)
+                REFERENCES users(id)
+
         )
     """)
 
