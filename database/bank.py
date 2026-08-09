@@ -371,6 +371,33 @@ def create_tables():
         )
     """)
 
+    # ---------------- VERIFICATIONS TABLE ----------------
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS verifications (
+
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+            email TEXT NOT NULL,
+
+            phone TEXT NOT NULL,
+
+            email_code TEXT,
+
+            phone_code TEXT,
+
+            email_verified INTEGER DEFAULT 0,
+
+            phone_verified INTEGER DEFAULT 0,
+
+            email_expires_at DATETIME,
+
+            phone_expires_at DATETIME,
+
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+
+        )
+    """)
+
 
 
     conn.commit()

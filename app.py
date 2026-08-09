@@ -16,6 +16,7 @@ from routes.notifications.notifications_api import notification_bp
 from routes.clinical_records.clinical_record_api import clinical_record_bp
 
 from routes.medical_documents.medical_documents_api import medical_document_bp
+from routes.verification.verification_api import verification_api_bp
 
 from security.jwt_config import configure_jwt
 
@@ -24,6 +25,8 @@ from routes.users.token_api import token_bp
 from routes.users.logout_api import logout_bp
 
 from security.rate_limit import limiter
+
+
 
 from flask import jsonify
 
@@ -71,6 +74,8 @@ app.register_blueprint(medical_document_bp)
 app.register_blueprint(token_bp)
 
 app.register_blueprint(logout_bp)
+
+app.register_blueprint(verification_api_bp)
 
 print(app.url_map)
 
