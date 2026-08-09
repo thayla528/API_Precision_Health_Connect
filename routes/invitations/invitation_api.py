@@ -1,3 +1,4 @@
+
 from flask import Blueprint, request, jsonify
 
 from database.users.user_model import UserModel
@@ -25,7 +26,6 @@ def get_all_invitations():
 
     invitations = invitation_service.get_all_invitations()
 
-
     return jsonify({
 
         "success": True,
@@ -38,51 +38,6 @@ def get_all_invitations():
 
 
 # =====================================================
-# FINALIZAR CADASTRO PELO CONVITE
-# =====================================================
-
-@invitation_api_bp.route(
-    "/register",
-    methods=["POST"]
-)
-def register_with_invitation():
-
-    data = request.get_json()
-
-
-    invitation_code = data.get("invitation_code")
-
-    password = data.get("password")
-
-
-
-    if not invitation_code or not password:
-
-        return jsonify({
-
-            "success": False,
-
-            "message": "Código e senha são obrigatórios."
-
-        }), 400
-
-
-
-    result = invitation_service.register_with_invitation(
-
-        invitation_code,
-
-        password
-
-    )
-
-
-    status = 200 if result["success"] else 400
-
-
-    return jsonify(result), status
-
-# =====================================================
 # VER DETALHES DE UMA SOLICITAÇÃO
 # =====================================================
 
@@ -92,70 +47,26 @@ def register_with_invitation():
 )
 def get_invitation(id):
 
-    invitation = invitation_service.invitation_model.get_by_id(id)
+    invitation = (
+        invitation_service
+        .invitation_model
+        .get_by_id(id)
+    )
 
     if not invitation:
 
         return jsonify({
+
             "success": False,
+
             "message": "Invitation not found"
+
         }), 404
 
 
-    return jsonify(dict(invitation)), 200
-
-
-
-# =====================================================
-# APROVAR SOLICITAÇÃO
-# =====================================================
-
-@invitation_api_bp.route(
-    "/admin/invitations/<int:id>/approve",
-    methods=["POST"]
-)
-def approve_invitation(id):
-
-    administrator_id = 1
-
-
-    result = invitation_service.approve_invitation(
-        id,
-        administrator_id
-    )
-
-
-    status = 200 if result["success"] else 400
-
-
-    return jsonify(result), status
-
-
-
-# =====================================================
-# REJEITAR SOLICITAÇÃO
-# =====================================================
-
-@invitation_api_bp.route(
-    "/admin/invitations/<int:id>/reject",
-    methods=["POST"]
-)
-def reject_invitation(id):
-
-    administrator_id = 1
-
-
-    result = invitation_service.reject_invitation(
-        id,
-        administrator_id
-    )
-
-
-    status = 200 if result["success"] else 400
-
-
-    return jsonify(result), status
-
+    return jsonify(
+        dict(invitation)
+    ), 200
 
 
 # =====================================================
@@ -168,22 +79,80 @@ def reject_invitation(id):
 )
 def request_invitation():
 
-    data = request.get_json()
+    data = request.get_json(
+        silent=True
+    )
 
+
+    if not data:
+
+        return jsonify({
+
+            "success": False,
+
+            "message": "Dados da solicitação não enviados."
+
+        }), 400
+
+
+    full_name = data.get("full_name")
+    email = data.get("email")
+    phone = data.get("phone")
+    birth_date = data.get("birth_date")
+    profile_type = data.get("profile_type")
+    interest_reason = data.get("interest")
+
+
+    if not full_name:
+
+        return jsonify({
+
+            "success": False,
+
+            "message": "Nome completo é obrigatório."
+
+        }), 400
+
+
+    if not email:
+
+        return jsonify({
+
+            "success": False,
+
+            "message": "E-mail é obrigatório."
+
+        }), 400
+
+
+    if not profile_type:
+
+        return jsonify({
+
+            "success": False,
+
+            "message": "Tipo de perfil é obrigatório."
+
+        }), 400
+
+
+    # =================================================
+    # CRIAR SOLICITAÇÃO
+    # =================================================
 
     result = invitation_service.request_invitation(
 
-        full_name=data.get("full_name"),
+        full_name=full_name,
 
-        email=data.get("email"),
+        email=email,
 
-        phone=data.get("phone"),
+        phone=phone,
 
-        birth_date=data.get("birth_date"),
+        birth_date=birth_date,
 
-        profile_type=data.get("profile_type"),
+        profile_type=profile_type,
 
-        interest_reason=data.get("interest")
+        interest_reason=interest_reason
 
     )
 
@@ -195,8 +164,148 @@ def request_invitation():
 
     return jsonify(result), 400
 
+
+# =====================================================
+# APROVAR SOLICITAÇÃO
+# =====================================================
+
+@invitation_api_bp.route(
+    "/admin/invitations/<int:id>/approve",
+    methods=["POST"]
+)
+def approve_invitation(id):
+
+    # Temporário.
+    # Depois devemos pegar o administrador
+    # autenticado pelo JWT/session.
+
+    administrator_id = 1
+
+
+    result = invitation_service.approve_invitation(
+
+        id,
+
+        administrator_id
+
+    )
+
+
+    status = (
+        200
+        if result["success"]
+        else 400
+    )
+
+
+    return jsonify(result), status
+
+
+# =====================================================
+# REJEITAR SOLICITAÇÃO
+# =====================================================
+
+@invitation_api_bp.route(
+    "/admin/invitations/<int:id>/reject",
+    methods=["POST"]
+)
+def reject_invitation(id):
+
+    # Temporário.
+    # Depois devemos pegar o administrador
+    # autenticado pelo JWT/session.
+
+    administrator_id = 1
+
+
+    result = invitation_service.reject_invitation(
+
+        id,
+
+        administrator_id
+
+    )
+
+
+    status = (
+        200
+        if result["success"]
+        else 400
+    )
+
+
+    return jsonify(result), status
+
+
 # =====================================================
 # FINALIZAR CADASTRO PELO CONVITE
+# =====================================================
+
+@invitation_api_bp.route(
+    "/register",
+    methods=["POST"]
+)
+def register_with_invitation():
+
+    data = request.get_json(
+        silent=True
+    )
+
+
+    if not data:
+
+        return jsonify({
+
+            "success": False,
+
+            "message": "Dados não enviados."
+
+        }), 400
+
+
+    invitation_code = data.get(
+        "invitation_code"
+    )
+
+    password = data.get(
+        "password"
+    )
+
+
+    if not invitation_code or not password:
+
+        return jsonify({
+
+            "success": False,
+
+            "message": "Código e senha são obrigatórios."
+
+        }), 400
+
+
+    result = invitation_service.register_with_invitation(
+
+        invitation_code,
+
+        password
+
+    )
+
+
+    status = (
+        200
+        if result["success"]
+        else 400
+    )
+
+
+    return jsonify(result), status
+
+
+# =====================================================
+# FINALIZAR CADASTRO PELO CONVITE
+#
+# ROTA UTILIZADA PELO FLUXO /api/register
 # =====================================================
 
 @invitation_api_bp.route(
@@ -205,11 +314,29 @@ def request_invitation():
 )
 def register_user():
 
-    data = request.get_json()
+    data = request.get_json(
+        silent=True
+    )
 
 
-    invitation_code = data.get("invitation_code")
-    password = data.get("password")
+    if not data:
+
+        return jsonify({
+
+            "success": False,
+
+            "message": "Dados não enviados."
+
+        }), 400
+
+
+    invitation_code = data.get(
+        "invitation_code"
+    )
+
+    password = data.get(
+        "password"
+    )
 
 
     if not invitation_code or not password:
@@ -217,14 +344,20 @@ def register_user():
         return jsonify({
 
             "success": False,
+
             "message": "Código e senha são obrigatórios."
 
         }), 400
 
 
+    # =================================================
+    # BUSCAR CONVITE
+    # =================================================
 
-    invitation = invitation_service.invitation_model.get_by_code(
-        invitation_code
+    invitation = (
+        invitation_service
+        .invitation_model
+        .get_by_code(invitation_code)
     )
 
 
@@ -233,41 +366,52 @@ def register_user():
         return jsonify({
 
             "success": False,
+
             "message": "Convite não encontrado."
 
         }), 404
 
 
+    invitation = dict(
+        invitation
+    )
 
-    invitation = dict(invitation)
 
-
+    # =================================================
+    # VERIFICAR STATUS
+    # =================================================
 
     if invitation["status"] != "approved":
 
         return jsonify({
 
             "success": False,
+
             "message": "Convite ainda não aprovado."
 
         }), 400
 
 
+    # =================================================
+    # VERIFICAR SE JÁ FOI UTILIZADO
+    # =================================================
 
     if invitation["used"] == 1:
 
         return jsonify({
 
             "success": False,
+
             "message": "Convite já utilizado."
 
         }), 400
 
 
+    # =================================================
+    # CRIAR USUÁRIO
+    # =================================================
 
-    # criar usuário
-
-    user_id = +UserModel.create(
+    user_id = UserModel.create(
 
         invitation_id=invitation["id"],
 
@@ -284,12 +428,20 @@ def register_user():
     )
 
 
-    # marcar convite como usado
+    # =================================================
+    # MARCAR CONVITE COMO UTILIZADO
+    # =================================================
 
     invitation_service.invitation_model.mark_as_used(
+
         invitation["id"]
+
     )
 
+
+    # =================================================
+    # RESPOSTA
+    # =================================================
 
     return jsonify({
 
@@ -300,3 +452,4 @@ def register_user():
         "user_id": user_id
 
     }), 201
+
