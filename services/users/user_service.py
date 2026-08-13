@@ -248,3 +248,288 @@ class UserService:
             "message": "User deactivated successfully."
 
         }
+
+    def create_administrator(
+            self,
+            full_name,
+            email,
+            password,
+            profile_photo=None
+    ):
+
+        if not full_name:
+            return {
+                "success": False,
+                "message": "Full name is required."
+            }
+
+        if not email:
+            return {
+                "success": False,
+                "message": "Email is required."
+            }
+
+        if not password:
+            return {
+                "success": False,
+                "message": "Password is required."
+            }
+
+        existing_user = self.user_model.get_by_email(email)
+
+        if existing_user:
+            return {
+                "success": False,
+                "message": "User already exists."
+            }
+
+        hashed_password = generate_password_hash(
+            password
+        )
+
+        user_id = self.user_model.create(
+
+            invitation_id=None,
+
+            full_name=full_name,
+
+            email=email,
+
+            password=hashed_password,
+
+            profile_type="administrator",
+
+            profile_photo=profile_photo
+
+        )
+
+        administrator_id = self.administrator_model.create(
+            user_id
+        )
+
+        return {
+            "success": True,
+            "message": "Administrator created successfully.",
+            "administrator_id": administrator_id,
+            "user_id": user_id
+        }
+
+    def update_administrator(
+            self,
+            administrator_id,
+            full_name,
+            email,
+            password=None,
+            profile_photo=None
+    ):
+
+        administrator = self.administrator_model.get_by_id(
+            administrator_id
+        )
+
+        if not administrator:
+            return {
+                "success": False,
+                "message": "Administrator not found."
+            }
+
+        user_id = administrator["user_id"]
+
+        user = self.user_model.get_by_id(
+            user_id
+        )
+
+        if not user:
+            return {
+                "success": False,
+                "message": "User not found."
+            }
+
+        if not full_name:
+            return {
+                "success": False,
+                "message": "Full name is required."
+            }
+
+        if not email:
+            return {
+                "success": False,
+                "message": "Email is required."
+            }
+
+        existing_user = self.user_model.get_by_email(
+            email
+        )
+
+        if existing_user and existing_user["id"] != user_id:
+            return {
+                "success": False,
+                "message": "Email already in use."
+            }
+
+        if password:
+
+            hashed_password = generate_password_hash(
+                password
+            )
+
+        else:
+
+            hashed_password = user["password"]
+
+        updated = self.user_model.update(
+            user_id=user_id,
+            full_name=full_name,
+            email=email,
+            password=hashed_password,
+            profile_photo=profile_photo
+        )
+
+        if updated == 0:
+            return {
+                "success": False,
+                "message": "Administrator was not updated."
+            }
+
+        return {
+            "success": True,
+            "message": "Administrator updated successfully.",
+            "administrator_id": administrator_id,
+            "user_id": user_id
+        }
+
+    def deactivate_administrator(
+            self,
+            admin_id,
+            administrator_id
+    ):
+
+        administrator = self.administrator_model.get_by_id(
+            administrator_id
+        )
+
+        if not administrator:
+            return {
+                "success": False,
+                "message": "Administrator not found."
+            }
+
+        user_id = administrator["user_id"]
+
+        user = self.administrator_model.get_user_by_id(
+            user_id
+        )
+
+        if not user:
+            return {
+                "success": False,
+                "message": "User not found."
+            }
+
+        if user["active"] == 0:
+            return {
+                "success": False,
+                "message": "Administrator is already inactive."
+            }
+
+        old_data = {
+            "active": user["active"]
+        }
+
+        updated = self.user_model.deactivate(
+            user_id
+        )
+
+        if updated == 0:
+            return {
+                "success": False,
+                "message": "Administrator was not deactivated."
+            }
+
+        new_data = {
+            "active": 0
+        }
+
+        self.audit_service.register(
+            admin_id,
+            "SOFT_DELETE",
+            "users",
+            user_id,
+            old_data,
+            new_data
+        )
+
+        return {
+            "success": True,
+            "message": "Administrator deactivated successfully.",
+            "administrator_id": administrator_id,
+            "user_id": user_id
+        }
+
+    def activate_administrator(
+            self,
+            admin_id,
+            administrator_id
+    ):
+
+        administrator = self.administrator_model.get_by_id(
+            administrator_id
+        )
+
+        if not administrator:
+            return {
+                "success": False,
+                "message": "Administrator not found."
+            }
+
+        user_id = administrator["user_id"]
+
+        user = self.administrator_model.get_user_by_id(
+            user_id
+        )
+
+        if not user:
+            return {
+                "success": False,
+                "message": "User not found."
+            }
+
+        if user["active"] == 1:
+            return {
+                "success": False,
+                "message": "Administrator is already active."
+            }
+
+        old_data = {
+            "active": user["active"]
+        }
+
+        updated = self.user_model.activate(
+            user_id
+        )
+
+        if updated == 0:
+            return {
+                "success": False,
+                "message": "Administrator was not activated."
+            }
+
+        new_data = {
+            "active": 1
+        }
+
+        self.audit_service.register(
+            admin_id,
+            "ACTIVATE",
+            "users",
+            user_id,
+            old_data,
+            new_data
+        )
+
+        return {
+            "success": True,
+            "message": "Administrator activated successfully.",
+            "administrator_id": administrator_id,
+            "user_id": user_id
+        }

@@ -213,6 +213,25 @@ class UserModel:
 
         return rows_updated
 
+    @staticmethod
+    def get_by_id_any_status(user_id):
+        conn = connect()
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            SELECT *
+            FROM users
+            WHERE id = ?
+        """, (
+            user_id,
+        ))
+
+        user = cursor.fetchone()
+
+        conn.close()
+
+        return user
+
     #    SELECT → busca dados → usa fetchone() / fetchall()
     #    INSERT → cria dados → usa lastrowid
     #    UPDATE → altera dados → usa commit() e pode usar rowcount

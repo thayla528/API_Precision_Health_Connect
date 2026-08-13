@@ -67,7 +67,8 @@ def get_active_users():
                 "profile_type": user["profile_type"],
                 "active": user["active"],
                 "profile_photo": user["profile_photo"],
-                "created_at": user["created_at"]
+                "created_at": user["created_at"],
+                "last_login": user["last_login"]
             }
             for user in users
         ]
