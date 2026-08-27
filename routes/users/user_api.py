@@ -25,7 +25,7 @@ audit_service = AuditService()
 
 
 
-@user_api_bp.route("/api/register", methods=["POST"])
+@user_api_bp.route("/api/users/register", methods=["POST"])
 def register():
 
     data = request.json

@@ -11,15 +11,17 @@ INSERT INTO users (
     email,
     password,
     role,
-    profile_type
+    profile_type,
+    phone
 )
-VALUES (?, ?, ?, ?, ?)
+VALUES (?, ?, ?, ?, ?,?)
 """, (
-    "Administrador",
+    "Thay",
     "thaylamoralles@gmail.com",
     generate_password_hash("@Parabens2008"),
     "administrator",
-    "administrator"
+    "administrator",
+    "18991878760"
 ))
 
 # Recupera o id do usuário criado

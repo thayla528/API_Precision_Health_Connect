@@ -1,5 +1,12 @@
-from flask import Flask
 
+from flask import Flask, send_from_directory
+
+from flask_cors import CORS
+
+import os
+import uuid
+from werkzeug.utils import secure_filename
+from config import PROFILE_PHOTOS_FOLDER, ALLOWED_EXTENSIONS
 
 from routes.users.user_api import user_api_bp
 from routes.invitations.invitation_api import invitation_api_bp
@@ -31,6 +38,7 @@ from security.rate_limit import limiter
 from flask import jsonify
 
 app = Flask(__name__)
+CORS(app)
 
 limiter.init_app(app)
 
@@ -38,7 +46,7 @@ configure_jwt(app)
 
 from config import (
     UPLOAD_FOLDER,
-    MAX_CONTENT_LENGTH
+    MAX_CONTENT_LENGTH, DOCUMENT_FOLDER
 )
 
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
@@ -82,6 +90,31 @@ app.register_blueprint(administrator_api_bp)
 print(app.url_map)
 
 # ---------------- RUN ----------------
+
+
+
+
+def allowed_file(filename):
+    return (
+            "." in filename
+            and
+            filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+    )
+
+
+@app.route('/uploads/profile_photos/<path:filename>')
+def serve_profile_photo(filename):
+    """Serve as fotos salvas na API para qualquer projeto externo (como seu App)."""
+    try:
+        # Descobre a pasta raiz do projeto da API e vai até a pasta das fotos
+        api_root_dir = os.path.abspath(os.path.dirname(__file__))
+        profile_photos_dir = os.path.join(api_root_dir, "uploads", "profile_photos")
+
+        return send_from_directory(profile_photos_dir, filename)
+    except Exception as e:
+        print(f"Erro ao buscar foto {filename} no diretório da API: {e}")
+        return "Imagem não encontrada", 404
+
 
 @app.errorhandler(429)
 def ratelimit_handler(e):

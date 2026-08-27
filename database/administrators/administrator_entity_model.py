@@ -164,6 +164,8 @@ class AdministratorEntityModel:
             "total_pages": total_pages
         }
 
+
+
     @staticmethod
     def get_details(administrator_id):
 
@@ -176,7 +178,7 @@ class AdministratorEntityModel:
                 administrators.user_id,
                 users.full_name,
                 users.email,
-                invitations.phone,
+                users.phone,
                 users.role,
                 users.profile_type,
                 users.profile_photo,
@@ -187,18 +189,36 @@ class AdministratorEntityModel:
             FROM administrators
             INNER JOIN users
                 ON users.id = administrators.user_id
-            LEFT JOIN invitations
-                ON invitations.id = users.invitation_id
             WHERE administrators.id = ?
-        """, (
-            administrator_id,
-        ))
+        """, (administrator_id,))
 
-        administrator = cursor.fetchone()
+        row = cursor.fetchone()
 
         conn.close()
 
-        return administrator
+        if not row:
+            return None
+
+        if isinstance(row, dict) or (
+                hasattr(row, "keys") and
+                callable(getattr(row, "keys"))
+        ):
+            return dict(row)
+
+        return {
+            "id": row[0],
+            "user_id": row[1],
+            "full_name": row[2],
+            "email": row[3],
+            "phone": row[4],
+            "role": row[5],
+            "profile_type": row[6],
+            "profile_photo": row[7],
+            "active": row[8],
+            "created_at": row[9],
+            "last_login": row[10],
+            "invitation_id": row[11]
+        }
 
     @staticmethod
     def get_user_by_id(user_id):

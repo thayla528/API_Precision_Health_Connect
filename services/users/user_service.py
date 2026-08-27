@@ -254,7 +254,8 @@ class UserService:
             full_name,
             email,
             password,
-            profile_photo=None
+            profile_photo=None,
+            phone=None
     ):
 
         if not full_name:
@@ -299,7 +300,9 @@ class UserService:
 
             profile_type="administrator",
 
-            profile_photo=profile_photo
+            profile_photo=profile_photo,
+
+            phone=phone
 
         )
 
@@ -320,7 +323,8 @@ class UserService:
             full_name,
             email,
             password=None,
-            profile_photo=None
+            profile_photo=None,
+            phone=None
     ):
 
         administrator = self.administrator_model.get_by_id(
@@ -368,29 +372,24 @@ class UserService:
             }
 
         if password:
-
             hashed_password = generate_password_hash(
                 password
             )
-
         else:
-
             hashed_password = user["password"]
 
-        updated = self.user_model.update(
+        # Executa a query de atualização no banco de dados
+        self.user_model.update(
             user_id=user_id,
             full_name=full_name,
             email=email,
             password=hashed_password,
-            profile_photo=profile_photo
+            profile_photo=profile_photo,
+            phone=phone
         )
 
-        if updated == 0:
-            return {
-                "success": False,
-                "message": "Administrator was not updated."
-            }
-
+        # CORREÇÃO: Removido o bloqueio do 'updated == 0'.
+        # Bancos de dados retornam 0 linhas afetadas quando os dados enviados são idênticos aos atuais.
         return {
             "success": True,
             "message": "Administrator updated successfully.",

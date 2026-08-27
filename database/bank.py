@@ -1,11 +1,14 @@
+import os
 import sqlite3
 
+DB_PATH = os.path.join(os.path.dirname(__file__), "health.db")
 
 def connect():
     conn = sqlite3.connect("database/health.db")
     conn.row_factory = sqlite3.Row
 
     conn.execute("PRAGMA foreign_keys = ON")
+
 
     return conn
 
@@ -14,35 +17,27 @@ def create_tables():
     conn = connect()
     cursor = conn.cursor()
 
-    # ---------------- USERS TABLE ----------------
     cursor.execute("""
-            CREATE TABLE IF NOT EXISTS users (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-
-                invitation_id INTEGER,
-
-                full_name TEXT NOT NULL,
-
-                email TEXT UNIQUE NOT NULL,
-
-                password TEXT NOT NULL,
-
-                role TEXT NOT NULL DEFAULT 'patient',
-
-                profile_type TEXT NOT NULL,
-
-                profile_photo TEXT,
-
-                active INTEGER DEFAULT 1,
-
-                last_login DATETIME,
-
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-
-                FOREIGN KEY(invitation_id)
-                    REFERENCES invitations(id)
-            )
-        """)
+    
+    CREATE TABLE IF NOT EXISTS users(
+    
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    INVITATION_ID INTEGER,
+    full_name TEXT NOT NULL,
+    email TEXT UNIQUE NOT NULL,
+    password TEXT NOT NULL,
+    role TEXT NOT NULL DEFAULT 'patient',
+    profile_type TEXT NOT NULL,
+    profile_photo TEXT,
+    phone TEXT,
+    active INTEGER DEFAULT 1,
+    last_login DATETIME,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(invitation_id)
+        REFERENCES invitations(id)
+        
+        )    
+    """)
 
     # ---------------- ADMINISTRATORS TABLE ----------------
     cursor.execute("""
@@ -61,6 +56,15 @@ def create_tables():
                     REFERENCES users(id)
             )
         """)
+
+    try:
+        cursor.execute("""
+            ALTER TABLE users
+            ADD COLUMN phone TEXT
+        """)
+
+    except sqlite3.OperationalError:
+        pass
 
     # ---------------- INVITATIONS TABLE ----------------
     cursor.execute("""

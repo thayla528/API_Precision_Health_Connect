@@ -12,6 +12,12 @@ DOCUMENT_FOLDER = os.path.join(
     "documents"
 )
 
+# NOVO: Caminho exclusivo para salvar as fotos de perfil
+PROFILE_PHOTOS_FOLDER = os.path.join(
+    UPLOAD_FOLDER,
+    "profile_photos"
+)
+
 MAX_CONTENT_LENGTH = 10 * 1024 * 1024  # 10 MB
 
 ALLOWED_EXTENSIONS = {

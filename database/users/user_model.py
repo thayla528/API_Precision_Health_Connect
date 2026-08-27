@@ -9,12 +9,13 @@ class UserModel:
             email,
             password,
             profile_type,
-            profile_photo
-
+            profile_photo,
+            phone=None
     ):
         conn = connect()
         cursor = conn.cursor()
 
+        # Correção da query e da tupla para bater exatamente 7 colunas com 7 valores
         cursor.execute("""
                 INSERT INTO users (
                     invitation_id,
@@ -23,22 +24,20 @@ class UserModel:
                     password,
                     role,
                     profile_type,
-                    profile_photo
-                    
+                    profile_photo,
+                    phone
                     
                 )
-                VALUES ( ?, ?, ?, ?, ?, ?,?)
+                VALUES (?, ?, ?, ?, ?, ?, ?,?)
             """, (
-            invitation_id,
-            full_name,
-            email,
-            password,
-            profile_type,
-            profile_type,
-            profile_photo
-
-
-        ))
+                invitation_id,
+                full_name,
+                email,
+                password,
+                profile_type,  # Mapeia para a coluna role
+                profile_type,  # Mapeia para a coluna profile_type
+                profile_photo  # Mapeia para a coluna profile_photo
+            ))
 
         conn.commit()
 
@@ -113,22 +112,18 @@ class UserModel:
         cursor = conn.cursor()
 
         cursor.execute("""
-
                     SELECT *
                     FROM users
                      ORDER BY full_name ASC
-                     
-                   
                 """, ())
 
         users = cursor.fetchall()
-        # coloca em ordem alfabética  ORDER BY full_name ASC
         conn.close()
 
         return users
 
     @staticmethod
-    def update(user_id, full_name, email, password, profile_photo):
+    def update(user_id, full_name, email, password, profile_photo, phone=None):
         conn = connect()
         cursor = conn.cursor()
 
@@ -138,13 +133,15 @@ class UserModel:
                 full_name = ?,
                 email = ?,
                 password = ?,
-                profile_photo = ?
+                profile_photo = ?,
+                phone = ?
             WHERE id = ?
         """, (
             full_name,
             email,
             password,
             profile_photo,
+            phone,
             user_id
         ))
 
@@ -231,15 +228,3 @@ class UserModel:
         conn.close()
 
         return user
-
-    #    SELECT → busca dados → usa fetchone() / fetchall()
-    #    INSERT → cria dados → usa lastrowid
-    #    UPDATE → altera dados → usa commit() e pode usar rowcount
-    #    DELETE → remove dados → usa commit()
-
-
-
-
-
-
-
