@@ -7,6 +7,7 @@ import os
 import uuid
 from werkzeug.utils import secure_filename
 from config import PROFILE_PHOTOS_FOLDER, ALLOWED_EXTENSIONS
+from routes.users.password_reset_api import password_reset_api_bp
 
 from routes.users.user_api import user_api_bp
 from routes.invitations.invitation_api import invitation_api_bp
@@ -86,6 +87,8 @@ app.register_blueprint(logout_bp)
 app.register_blueprint(verification_api_bp)
 
 app.register_blueprint(administrator_api_bp)
+
+app.register_blueprint(password_reset_api_bp)
 
 print(app.url_map)
 

@@ -1,21 +1,24 @@
+
 from database.bank import connect
 
 
 class AdministratorEntityModel:
 
     @staticmethod
-    def create(user_id):
+    def create(user_id, phone=None):
 
         conn = connect()
         cursor = conn.cursor()
 
         cursor.execute("""
             INSERT INTO administrators (
-                user_id
+                user_id,
+                phone
             )
-            VALUES (?)
+            VALUES (?, ?)
         """, (
             user_id,
+            phone
         ))
 
         conn.commit()
@@ -81,6 +84,7 @@ class AdministratorEntityModel:
         parameters = []
 
         if search:
+
             conditions.append("""
                 (
                     users.full_name LIKE ?
@@ -96,6 +100,7 @@ class AdministratorEntityModel:
             ])
 
         if status in ["ativo", "inativo"]:
+
             conditions.append("""
                 users.active = ?
             """)
@@ -108,7 +113,15 @@ class AdministratorEntityModel:
         where_clause = ""
 
         if conditions:
-            where_clause = "WHERE " + " AND ".join(conditions)
+
+            where_clause = (
+                "WHERE " +
+                " AND ".join(conditions)
+            )
+
+        # =================================================
+        # CONTAR ADMINISTRADORES
+        # =================================================
 
         cursor.execute(f"""
             SELECT COUNT(*)
@@ -122,27 +135,36 @@ class AdministratorEntityModel:
 
         offset = (page - 1) * per_page
 
+        # =================================================
+        # BUSCAR ADMINISTRADORES
+        # =================================================
 
         cursor.execute(f"""
             SELECT
                 administrators.id,
                 administrators.user_id,
+
                 users.full_name,
                 users.email,
-                invitations.phone,
+
+                administrators.phone,
+
                 users.role,
                 users.profile_type,
                 users.profile_photo,
                 users.active,
                 users.created_at,
                 users.last_login
+
             FROM administrators
+
             INNER JOIN users
                 ON users.id = administrators.user_id
-            LEFT JOIN invitations
-                ON invitations.id = users.invitation_id
+
             {where_clause}
+
             ORDER BY users.full_name ASC
+
             LIMIT ? OFFSET ?
         """, parameters + [per_page, offset])
 
@@ -164,8 +186,6 @@ class AdministratorEntityModel:
             "total_pages": total_pages
         }
 
-
-
     @staticmethod
     def get_details(administrator_id):
 
@@ -176,9 +196,12 @@ class AdministratorEntityModel:
             SELECT
                 administrators.id,
                 administrators.user_id,
+
                 users.full_name,
                 users.email,
-                users.phone,
+
+                administrators.phone,
+
                 users.role,
                 users.profile_type,
                 users.profile_photo,
@@ -186,39 +209,48 @@ class AdministratorEntityModel:
                 users.created_at,
                 users.last_login,
                 users.invitation_id
+
             FROM administrators
+
             INNER JOIN users
                 ON users.id = administrators.user_id
-            WHERE administrators.id = ?
-        """, (administrator_id,))
 
-        row = cursor.fetchone()
+            WHERE administrators.id = ?
+        """, (
+            administrator_id,
+        ))
+
+        administrator = cursor.fetchone()
 
         conn.close()
 
-        if not row:
-            return None
+        return administrator
 
-        if isinstance(row, dict) or (
-                hasattr(row, "keys") and
-                callable(getattr(row, "keys"))
-        ):
-            return dict(row)
+    @staticmethod
+    def update_phone(
+        administrator_id,
+        phone
+    ):
 
-        return {
-            "id": row[0],
-            "user_id": row[1],
-            "full_name": row[2],
-            "email": row[3],
-            "phone": row[4],
-            "role": row[5],
-            "profile_type": row[6],
-            "profile_photo": row[7],
-            "active": row[8],
-            "created_at": row[9],
-            "last_login": row[10],
-            "invitation_id": row[11]
-        }
+        conn = connect()
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            UPDATE administrators
+            SET phone = ?
+            WHERE id = ?
+        """, (
+            phone,
+            administrator_id
+        ))
+
+        conn.commit()
+
+        rows_updated = cursor.rowcount
+
+        conn.close()
+
+        return rows_updated
 
     @staticmethod
     def get_user_by_id(user_id):
@@ -239,3 +271,4 @@ class AdministratorEntityModel:
         conn.close()
 
         return user
+

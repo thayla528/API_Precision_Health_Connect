@@ -1,14 +1,11 @@
-import os
 import sqlite3
 
-DB_PATH = os.path.join(os.path.dirname(__file__), "health.db")
 
 def connect():
     conn = sqlite3.connect("database/health.db")
     conn.row_factory = sqlite3.Row
 
     conn.execute("PRAGMA foreign_keys = ON")
-
 
     return conn
 
@@ -17,54 +14,76 @@ def create_tables():
     conn = connect()
     cursor = conn.cursor()
 
+    # ---------------- USERS TABLE ----------------
     cursor.execute("""
-    
-    CREATE TABLE IF NOT EXISTS users(
-    
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    INVITATION_ID INTEGER,
-    full_name TEXT NOT NULL,
-    email TEXT UNIQUE NOT NULL,
-    password TEXT NOT NULL,
-    role TEXT NOT NULL DEFAULT 'patient',
-    profile_type TEXT NOT NULL,
-    profile_photo TEXT,
-    phone TEXT,
-    active INTEGER DEFAULT 1,
-    last_login DATETIME,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY(invitation_id)
-        REFERENCES invitations(id)
-        
-        )    
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+            invitation_id INTEGER,
+
+            full_name TEXT NOT NULL,
+
+            email TEXT UNIQUE NOT NULL,
+
+            password TEXT NOT NULL,
+
+            role TEXT NOT NULL DEFAULT 'patient',
+
+            profile_type TEXT NOT NULL,
+
+            profile_photo TEXT,
+
+            active INTEGER DEFAULT 1,
+
+            last_login DATETIME,
+
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+            FOREIGN KEY(invitation_id)
+                REFERENCES invitations(id)
+        )
     """)
 
     # ---------------- ADMINISTRATORS TABLE ----------------
     cursor.execute("""
-            CREATE TABLE IF NOT EXISTS administrators (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+        CREATE TABLE IF NOT EXISTS administrators (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
 
-                user_id INTEGER UNIQUE NOT NULL,
+            user_id INTEGER UNIQUE NOT NULL,
 
-                access_level TEXT DEFAULT 'admin',
+            phone TEXT,
 
-                department TEXT,
+            access_level TEXT DEFAULT 'admin',
 
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            department TEXT,
 
-                FOREIGN KEY(user_id)
-                    REFERENCES users(id)
-            )
-        """)
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 
-    try:
-        cursor.execute("""
-            ALTER TABLE users
-            ADD COLUMN phone TEXT
-        """)
+            FOREIGN KEY(user_id)
+                REFERENCES users(id)
+        )
+    """)
 
-    except sqlite3.OperationalError:
-        pass
+    # ---------------- VERIFICATIONS TABLE ----------------
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS verifications (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+            email TEXT NOT NULL,
+            phone TEXT,
+
+            email_code TEXT NOT NULL,
+            phone_code TEXT,
+
+            email_verified INTEGER DEFAULT 0,
+            phone_verified INTEGER DEFAULT 0,
+
+            email_expires_at DATETIME NOT NULL,
+            phone_expires_at DATETIME,
+
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
 
     # ---------------- INVITATIONS TABLE ----------------
     cursor.execute("""
@@ -371,33 +390,6 @@ def create_tables():
 
             FOREIGN KEY(user_id)
                 REFERENCES users(id)
-
-        )
-    """)
-
-    # ---------------- VERIFICATIONS TABLE ----------------
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS verifications (
-
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-
-            email TEXT NOT NULL,
-
-            phone TEXT NOT NULL,
-
-            email_code TEXT,
-
-            phone_code TEXT,
-
-            email_verified INTEGER DEFAULT 0,
-
-            phone_verified INTEGER DEFAULT 0,
-
-            email_expires_at DATETIME,
-
-            phone_expires_at DATETIME,
-
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 
         )
     """)

@@ -126,6 +126,8 @@ class UserService:
 
             profile_photo
 
+
+
         )
 
 
@@ -302,12 +304,13 @@ class UserService:
 
             profile_photo=profile_photo,
 
-            phone=phone
+
 
         )
 
         administrator_id = self.administrator_model.create(
-            user_id
+            user_id,
+            phone
         )
 
         return {
@@ -316,6 +319,8 @@ class UserService:
             "administrator_id": administrator_id,
             "user_id": user_id
         }
+
+
 
     def update_administrator(
             self,
@@ -372,30 +377,44 @@ class UserService:
             }
 
         if password:
+
             hashed_password = generate_password_hash(
                 password
             )
+
         else:
+
             hashed_password = user["password"]
 
-        # Executa a query de atualização no banco de dados
-        self.user_model.update(
+        # Atualiza os dados que pertencem à tabela USERS
+        updated = self.user_model.update(
             user_id=user_id,
             full_name=full_name,
             email=email,
             password=hashed_password,
-            profile_photo=profile_photo,
-            phone=phone
+            profile_photo=profile_photo
         )
 
-        # CORREÇÃO: Removido o bloqueio do 'updated == 0'.
-        # Bancos de dados retornam 0 linhas afetadas quando os dados enviados são idênticos aos atuais.
+        if updated == 0:
+            return {
+                "success": False,
+                "message": "Administrator was not updated."
+            }
+
+        # Atualiza o telefone que pertence à tabela ADMINISTRATORS
+        self.administrator_model.update_phone(
+            administrator_id,
+            phone
+        )
+
         return {
             "success": True,
             "message": "Administrator updated successfully.",
             "administrator_id": administrator_id,
             "user_id": user_id
         }
+
+
 
     def deactivate_administrator(
             self,

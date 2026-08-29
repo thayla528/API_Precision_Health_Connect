@@ -1,63 +1,81 @@
 from database.bank import connect
 
+
 class UserModel:
+
     @staticmethod
-    # Create invitation
     def create(
             invitation_id,
             full_name,
             email,
             password,
             profile_type,
-            profile_photo,
-            phone=None
+            profile_photo
     ):
         conn = connect()
         cursor = conn.cursor()
 
-        # Correção da query e da tupla para bater exatamente 7 colunas com 7 valores
         cursor.execute("""
-                INSERT INTO users (
-                    invitation_id,
-                    full_name,
-                    email,
-                    password,
-                    role,
-                    profile_type,
-                    profile_photo,
-                    phone
-                    
-                )
-                VALUES (?, ?, ?, ?, ?, ?, ?,?)
-            """, (
+            INSERT INTO users (
                 invitation_id,
                 full_name,
                 email,
                 password,
-                profile_type,  # Mapeia para a coluna role
-                profile_type,  # Mapeia para a coluna profile_type
-                profile_photo  # Mapeia para a coluna profile_photo
-            ))
+                role,
+                profile_type,
+                profile_photo
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (
+            invitation_id,
+            full_name,
+            email,
+            password,
+            profile_type,
+            profile_type,
+            profile_photo
+        ))
 
         conn.commit()
 
-        # Returns the automatically generated ID
         user_id = cursor.lastrowid
 
         conn.close()
 
         return user_id
 
+
+    # =====================================================
+    # LISTAR USUÁRIOS ATIVOS
+    # =====================================================
+
     @staticmethod
     def get_active_users():
+
         conn = connect()
         cursor = conn.cursor()
 
         cursor.execute("""
-            SELECT *
+            SELECT
+                users.id,
+                users.full_name,
+                users.email,
+                administrators.phone AS phone,
+                users.role,
+                users.profile_type,
+                users.active,
+                users.profile_photo,
+                users.created_at,
+                users.last_login
+
             FROM users
-            WHERE active = 1
-            ORDER BY full_name ASC
+
+            LEFT JOIN administrators
+                ON administrators.user_id = users.id
+
+            WHERE users.active = 1
+
+            ORDER BY users.full_name ASC
         """)
 
         users = cursor.fetchall()
@@ -66,8 +84,10 @@ class UserModel:
 
         return users
 
+
     @staticmethod
     def get_by_email(email):
+
         conn = connect()
         cursor = conn.cursor()
 
@@ -86,8 +106,10 @@ class UserModel:
 
         return user
 
+
     @staticmethod
     def get_by_id(user_id):
+
         conn = connect()
         cursor = conn.cursor()
 
@@ -106,24 +128,35 @@ class UserModel:
 
         return user
 
+
     @staticmethod
     def get_all():
+
         conn = connect()
         cursor = conn.cursor()
 
         cursor.execute("""
-                    SELECT *
-                    FROM users
-                     ORDER BY full_name ASC
-                """, ())
+            SELECT *
+            FROM users
+            ORDER BY full_name ASC
+        """)
 
         users = cursor.fetchall()
+
         conn.close()
 
         return users
 
+
     @staticmethod
-    def update(user_id, full_name, email, password, profile_photo, phone=None):
+    def update(
+            user_id,
+            full_name,
+            email,
+            password,
+            profile_photo
+    ):
+
         conn = connect()
         cursor = conn.cursor()
 
@@ -133,15 +166,14 @@ class UserModel:
                 full_name = ?,
                 email = ?,
                 password = ?,
-                profile_photo = ?,
-                phone = ?
+                profile_photo = ?
+
             WHERE id = ?
         """, (
             full_name,
             email,
             password,
             profile_photo,
-            phone,
             user_id
         ))
 
@@ -153,8 +185,10 @@ class UserModel:
 
         return rows_updated
 
+
     @staticmethod
     def deactivate(user_id):
+
         conn = connect()
         cursor = conn.cursor()
 
@@ -162,7 +196,9 @@ class UserModel:
             UPDATE users
             SET active = 0
             WHERE id = ?
-        """, (user_id,))
+        """, (
+            user_id,
+        ))
 
         conn.commit()
 
@@ -172,8 +208,10 @@ class UserModel:
 
         return rows_updated
 
+
     @staticmethod
     def activate(user_id):
+
         conn = connect()
         cursor = conn.cursor()
 
@@ -181,7 +219,9 @@ class UserModel:
             UPDATE users
             SET active = 1
             WHERE id = ?
-        """, (user_id,))
+        """, (
+            user_id,
+        ))
 
         conn.commit()
 
@@ -191,8 +231,10 @@ class UserModel:
 
         return rows_updated
 
+
     @staticmethod
     def update_last_login(user_id):
+
         conn = connect()
         cursor = conn.cursor()
 
@@ -200,7 +242,9 @@ class UserModel:
             UPDATE users
             SET last_login = CURRENT_TIMESTAMP
             WHERE id = ?
-        """, (user_id,))
+        """, (
+            user_id,
+        ))
 
         conn.commit()
 
@@ -209,22 +253,3 @@ class UserModel:
         conn.close()
 
         return rows_updated
-
-    @staticmethod
-    def get_by_id_any_status(user_id):
-        conn = connect()
-        cursor = conn.cursor()
-
-        cursor.execute("""
-            SELECT *
-            FROM users
-            WHERE id = ?
-        """, (
-            user_id,
-        ))
-
-        user = cursor.fetchone()
-
-        conn.close()
-
-        return user

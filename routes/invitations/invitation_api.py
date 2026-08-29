@@ -1,6 +1,8 @@
 
 from flask import Blueprint, request, jsonify
 
+from werkzeug.security import generate_password_hash
+
 from database.users.user_model import UserModel
 from services.invitations.invitation_service import InvitationService
 
@@ -411,20 +413,16 @@ def register_user():
     # CRIAR USUÁRIO
     # =================================================
 
+    hashed_password = generate_password_hash(password)
+
     user_id = UserModel.create(
-
         invitation_id=invitation["id"],
-
         full_name=invitation["full_name"],
-
         email=invitation["email"],
-
-        password=password,
-
+        password=hashed_password,
         profile_type=invitation["profile_type"],
-
-        profile_photo=None
-
+        profile_photo=None,
+        phone=invitation["phone"]
     )
 
 
