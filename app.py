@@ -17,7 +17,7 @@ from routes.messages.message_api import message_bp
 from routes.patients.patient_professional_api import patient_professional_bp
 from routes.professionals.professional_profile_api import professional_profile_bp
 from routes.appointments.appointment_api import appointment_bp
-from routes.admin.admin_api import administrator_api_bp
+from routes.admin.administrator_api import administrator_api_bp
 
 from routes.notifications.notifications_api import notification_bp
 
