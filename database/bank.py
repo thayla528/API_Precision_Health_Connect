@@ -442,7 +442,7 @@ def create_tables():
 
             email TEXT NOT NULL,
 
-            code TEXT NOT NULL,
+            reset_code TEXT NOT NULL,
 
             expires_at DATETIME NOT NULL,
 
@@ -455,6 +455,10 @@ def create_tables():
                 ON DELETE CASCADE
         )
     """)
+
+
+
+
 
 
 

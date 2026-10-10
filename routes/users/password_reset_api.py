@@ -83,6 +83,47 @@ def forgot_password():
     return jsonify(result), 200
 
 
+# =====================================================
+# REDEFINIR SENHA
+# =====================================================
+
+@password_reset_api_bp.route(
+    "/api/password/reset",
+    methods=["POST"]
+)
+def reset_password():
+
+    data = request.get_json(silent=True)
+
+    if not data:
+        return jsonify({
+            "success": False,
+            "message": "Dados não enviados."
+        }), 400
+
+    reset_code = data.get("reset_code")
+    new_password = data.get("new_password")
+    confirm_password = data.get("confirm_password")
+
+    if not reset_code or not new_password or not confirm_password:
+        return jsonify({
+            "success": False,
+            "message": (
+                "Código, nova senha e confirmação são obrigatórios."
+            )
+        }), 400
+
+    result = password_reset_service.reset_password(
+        reset_code,
+        new_password,
+        confirm_password
+    )
+
+    if not result["success"]:
+        return jsonify(result), 400
+
+    return jsonify(result), 200
+
 
 
 # =====================================================

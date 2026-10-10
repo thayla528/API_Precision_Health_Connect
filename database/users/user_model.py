@@ -45,6 +45,31 @@ class UserModel:
         return user_id
 
 
+    @staticmethod
+    def update_password(user_id, hashed_password):
+        conn = connect()
+        try:
+            cursor = conn.cursor()
+
+            cursor.execute("""
+                UPDATE users
+                SET password = ?
+                WHERE id = ?
+                AND active = 1
+            """, (
+                hashed_password,
+                user_id
+            ))
+
+            conn.commit()
+            rows_updated = cursor.rowcount
+
+            return rows_updated
+
+        finally:
+            conn.close()
+
+
     # =====================================================
     # LISTAR USUÁRIOS ATIVOS
     # =====================================================
