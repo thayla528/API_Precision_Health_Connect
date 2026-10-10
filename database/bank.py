@@ -117,8 +117,6 @@ def create_tables():
         )
     """)
 
-
-
     # ---------------- PATIENTS TABLE ----------------
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS patients (
@@ -155,6 +153,9 @@ def create_tables():
         )
     """)
 
+
+
+
     # ---------------- PROFESSIONALS TABLE ----------------
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS professionals (
@@ -182,8 +183,6 @@ def create_tables():
                 REFERENCES users(id)
         )
     """)
-
-
 
     # ---------------- PATIENT PROFESSIONAL TABLE ----------------
     cursor.execute("""
@@ -253,6 +252,46 @@ def create_tables():
             notes TEXT,
 
             recorded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+            FOREIGN KEY(appointment_id)
+                REFERENCES appointments(id)
+        )
+    """)
+
+    # ---------------- PRESCRIPTIONS TABLE ----------------
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS prescriptions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+            patient_id INTEGER NOT NULL,
+
+            professional_id INTEGER NOT NULL,
+
+            appointment_id INTEGER,
+
+            medication TEXT NOT NULL,
+
+            dosage TEXT,
+
+            frequency TEXT,
+
+            duration TEXT,
+
+            prescription_type TEXT,
+
+            instructions TEXT,
+
+            status TEXT DEFAULT 'pending',
+
+            issued_at DATETIME,
+
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+            FOREIGN KEY(patient_id)
+                REFERENCES patients(id),
+
+            FOREIGN KEY(professional_id)
+                REFERENCES professionals(id),
 
             FOREIGN KEY(appointment_id)
                 REFERENCES appointments(id)
@@ -393,6 +432,37 @@ def create_tables():
 
         )
     """)
+
+    # ---------------- PASSWORD RESETS TABLE ----------------
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS password_resets (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+            user_id INTEGER NOT NULL,
+
+            email TEXT NOT NULL,
+
+            code TEXT NOT NULL,
+
+            expires_at DATETIME NOT NULL,
+
+            used INTEGER DEFAULT 0,
+
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+            FOREIGN KEY(user_id)
+                REFERENCES users(id)
+                ON DELETE CASCADE
+        )
+    """)
+
+
+
+
+
+
+
+
 
 
 

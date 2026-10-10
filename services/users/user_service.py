@@ -7,6 +7,9 @@ from database.patients.patient_entity_model import PatientEntityModel
 from database.professionals.professional_entity_model import ProfessionalEntityModel
 from database.administrators.administrator_entity_model import AdministratorEntityModel
 
+from services.email.email_service import EmailService
+import secrets
+
 from services.audit.audit_service import AuditService
 
 class UserService:
@@ -15,6 +18,8 @@ class UserService:
     def __init__(self):
 
         self.audit_service = AuditService()
+
+        self.email_service = EmailService()
 
         self.user_model = UserModel()
 
@@ -253,30 +258,35 @@ class UserService:
 
     def create_administrator(
             self,
+            admin_id,
             full_name,
             email,
-            password,
             profile_photo=None,
             phone=None
     ):
 
-        if not full_name:
+        # =====================================================
+        # VALIDAR DADOS
+        # =====================================================
+
+        if not full_name or not full_name.strip():
             return {
                 "success": False,
                 "message": "Full name is required."
             }
 
-        if not email:
+        if not email or not email.strip():
             return {
                 "success": False,
                 "message": "Email is required."
             }
 
-        if not password:
-            return {
-                "success": False,
-                "message": "Password is required."
-            }
+        full_name = full_name.strip()
+        email = email.strip().lower()
+
+        # =====================================================
+        # VERIFICAR USUÁRIO EXISTENTE
+        # =====================================================
 
         existing_user = self.user_model.get_by_email(email)
 
@@ -286,38 +296,229 @@ class UserService:
                 "message": "User already exists."
             }
 
-        hashed_password = generate_password_hash(
-            password
-        )
+        # =====================================================
+        # CRIAR SOLICITAÇÃO DE CONVITE
+        # =====================================================
 
-        user_id = self.user_model.create(
+        try:
 
-            invitation_id=None,
+            invitation_id = self.invitation_model.create(
 
-            full_name=full_name,
+                full_name=full_name,
 
-            email=email,
+                email=email,
 
-            password=hashed_password,
+                phone=phone,
 
-            profile_type="administrator",
+                birth_date=None,
 
-            profile_photo=profile_photo,
+                profile_type="administrator",
 
+                interest_reason=
+                "Administrator created by administrator panel"
 
+            )
 
-        )
+        except Exception as e:
 
-        administrator_id = self.administrator_model.create(
-            user_id,
-            phone
-        )
+            print(
+                "Erro ao criar convite:",
+                e,
+                flush=True
+            )
+
+            return {
+                "success": False,
+                "message": "Não foi possível criar o convite."
+            }
+
+        # =====================================================
+        # GERAR CÓDIGO DO CONVITE
+        # =====================================================
+
+        invitation_code = secrets.token_hex(4)
+
+        # =====================================================
+        # APROVAR CONVITE
+        # =====================================================
+
+        try:
+
+            self.invitation_model.approve(
+
+                invitation_id,
+
+                invitation_code,
+
+                admin_id
+
+            )
+
+        except Exception as e:
+
+            print(
+                "Erro ao aprovar convite:",
+                e,
+                flush=True
+            )
+
+            return {
+                "success": False,
+                "message": "Não foi possível aprovar o convite."
+            }
+
+        # =====================================================
+        # REGISTRAR AUDITORIA
+        # =====================================================
+
+        try:
+
+            self.audit_service.register(
+
+                admin_id,
+
+                "CREATE_ADMINISTRATOR",
+
+                "invitations",
+
+                invitation_id,
+
+                None,
+
+                {
+                    "status": "approved",
+                    "full_name": full_name,
+                    "email": email,
+                    "profile_type": "administrator"
+                }
+
+            )
+
+        except Exception as e:
+
+            print(
+                "Erro ao registrar auditoria:",
+                e,
+                flush=True
+            )
+
+            # O convite continua válido.
+            # O erro de auditoria não impede o envio do e-mail.
+
+        # =====================================================
+        # ENVIAR E-MAIL
+        # =====================================================
+
+        try:
+
+            email_sent = self.email_service.send_email(
+
+                recipient=email,
+
+                subject=
+                "Convite de administrador - Precision Health Connect",
+
+                message=f"""
+
+                <h2>Olá, {full_name}!</h2>
+
+                <p>
+                    Você foi convidado para fazer parte da equipe
+                    administrativa do
+                    <strong>Precision Health Connect</strong>.
+                </p>
+
+                <p>
+                    Para finalizar seu cadastro, utilize o código
+                    de convite abaixo:
+                </p>
+
+                <div style="
+                    margin: 25px 0;
+                    padding: 20px;
+                    text-align: center;
+                    background-color: #f5f7f9;
+                    border-radius: 10px;
+                ">
+
+                    <strong style="
+                        font-size: 28px;
+                        letter-spacing: 4px;
+                    ">
+                        {invitation_code}
+                    </strong>
+
+                </div>
+
+                <p>
+                    Utilize esse código na página de finalização
+                    do cadastro.
+                </p>
+
+                <p>
+                    Durante a finalização, você poderá definir
+                    sua senha de acesso.
+                </p>
+
+                <p>
+                    Atenciosamente,<br>
+                    Equipe Precision Health Connect.
+                </p>
+
+                """
+
+            )
+
+        except Exception as e:
+
+            print(
+                "Erro ao enviar e-mail:",
+                e,
+                flush=True
+            )
+
+            email_sent = False
+
+        # =====================================================
+        # VERIFICAR ENVIO DO E-MAIL
+        # =====================================================
+
+        if not email_sent:
+            return {
+
+                "success": False,
+
+                "message":
+                    "Convite criado, mas não foi possível enviar o e-mail.",
+
+                "invitation_id":
+                    invitation_id,
+
+                "email_sent":
+                    False
+
+            }
+
+        # =====================================================
+        # SUCESSO
+        # =====================================================
 
         return {
+
             "success": True,
-            "message": "Administrator created successfully.",
-            "administrator_id": administrator_id,
-            "user_id": user_id
+
+            "message":
+                "Administrator invitation created successfully. Email sent.",
+
+            "invitation_id":
+                invitation_id,
+
+            "email":
+                email,
+
+            "email_sent":
+                True
+
         }
 
 

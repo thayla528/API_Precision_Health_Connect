@@ -11,6 +11,10 @@ class PatientProfessionalService:
         self.patient_model = PatientEntityModel()
 
 
+    # =====================================================
+    # CREATE LINK
+    # =====================================================
+
     def create_link(self, patient_id, professional_id):
 
         patient = self.patient_model.get_by_id(
@@ -47,10 +51,10 @@ class PatientProfessionalService:
                 "message": "Relationship already exists."
             }
 
-
         relationship_id = self.relationship_model.create(
             patient_id,
-            professional_id
+            professional_id,
+            status="pending"
         )
 
 
@@ -60,6 +64,11 @@ class PatientProfessionalService:
             "relationship_id": relationship_id
         }
 
+
+    # =====================================================
+    # GET PATIENT PROFESSIONALS
+    # =====================================================
+
     def get_patient_professionals(self, patient_id):
 
         relationships = (
@@ -67,23 +76,34 @@ class PatientProfessionalService:
             .get_by_patient(patient_id)
         )
 
+
         return {
             "success": True,
+
             "relationships": [
                 dict(item)
                 for item in relationships
             ]
         }
+
+
+    # =====================================================
+    # GET PROFESSIONAL PATIENTS
+    # =====================================================
 
     def get_professional_patients(self, professional_id):
 
         relationships = (
             self.relationship_model
-            .get_by_professional(professional_id)
+            .get_by_professional(
+                professional_id
+            )
         )
+
 
         return {
             "success": True,
+
             "relationships": [
                 dict(item)
                 for item in relationships
@@ -91,15 +111,22 @@ class PatientProfessionalService:
         }
 
 
+    # =====================================================
+    # DISABLE LINK
+    # =====================================================
+
     def deactivate_link(self, relationship_id):
 
         rows_updated = (
             self.relationship_model
-            .deactivate(relationship_id)
+            .deactivate(
+                relationship_id
+            )
         )
 
 
         if rows_updated == 0:
+
             return {
                 "success": False,
                 "message": "Relationship not found."
@@ -110,3 +137,93 @@ class PatientProfessionalService:
             "success": True,
             "message": "Relationship deactivated successfully."
         }
+
+    # =====================================================
+    # GET PENDING REQUESTS OF PATIENT
+    # =====================================================
+
+    def get_pending_requests(self, patient_id):
+
+        relationships = (
+            self.relationship_model
+            .get_pending_by_patient(
+                patient_id
+            )
+        )
+
+        return {
+            "success": True,
+
+            "requests": [
+                dict(item)
+                for item in relationships
+            ]
+        }
+
+
+    # =====================================================
+    # APPROVE RELATIONSHIP
+    # =====================================================
+
+    def approve_relationship(self, relationship_id):
+
+        rows_updated = (
+            self.relationship_model
+            .approve(
+                relationship_id
+            )
+        )
+
+        if rows_updated == 0:
+
+            return {
+                "success": False,
+                "message": "Pending relationship not found."
+            }
+
+        return {
+            "success": True,
+            "message": "Relationship approved successfully."
+        }
+
+
+    # =====================================================
+    # REJECT RELATIONSHIP
+    # =====================================================
+
+    def reject_relationship(self, relationship_id):
+
+        rows_updated = (
+            self.relationship_model
+            .reject(
+                relationship_id
+            )
+        )
+
+        if rows_updated == 0:
+
+            return {
+                "success": False,
+                "message": "Pending relationship not found."
+            }
+
+        return {
+            "success": True,
+            "message": "Relationship rejected successfully."
+        }
+
+    # =====================================================
+    # SEARCH PATIENTS
+    # =====================================================
+
+    def search_patients(self, search=""):
+
+        patients = (
+            self.patient_model
+            .search_patients(search)
+        )
+
+        return patients
+
+
+

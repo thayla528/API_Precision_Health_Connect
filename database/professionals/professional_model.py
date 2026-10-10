@@ -1,7 +1,12 @@
+
 from database.bank import connect
 
 
 class ProfessionalModel:
+
+    # =====================================================
+    # CREATE
+    # =====================================================
 
     @staticmethod
     def create(
@@ -46,6 +51,11 @@ class ProfessionalModel:
 
         return professional_id
 
+
+    # =====================================================
+    # GET USER
+    # =====================================================
+
     @staticmethod
     def get_user(user_id):
 
@@ -57,8 +67,12 @@ class ProfessionalModel:
                 id,
                 full_name,
                 email,
+                role,
                 profile_type,
-                profile_photo
+                profile_photo,
+                active,
+                last_login,
+                created_at
             FROM users
             WHERE id = ?
         """, (user_id,))
@@ -73,6 +87,10 @@ class ProfessionalModel:
         return None
 
 
+    # =====================================================
+    # GET PROFESSIONAL PROFILE
+    # =====================================================
+
     @staticmethod
     def get_profile(user_id):
 
@@ -83,19 +101,30 @@ class ProfessionalModel:
 
             SELECT
 
+                -- USERS
+
                 u.id,
+                u.id AS user_id,
                 u.full_name,
                 u.email,
+                u.role,
+                u.profile_type,
                 u.profile_photo,
-                u.created_at,
+                u.active AS user_active,
+                u.last_login,
+                u.created_at AS user_created_at,
 
+                -- PROFESSIONALS
+
+                p.id AS professional_id,
                 p.specialty,
                 p.license_number,
                 p.institution,
                 p.practice_area,
                 p.phone,
                 p.professional_email,
-                p.active
+                p.active AS professional_active,
+                p.created_at AS professional_created_at
 
             FROM users u
 
@@ -113,8 +142,200 @@ class ProfessionalModel:
         if profile:
             return dict(profile)
 
-        return {}
+        return None
 
+
+    # =====================================================
+    # UPDATE USER DATA
+    # =====================================================
+
+    @staticmethod
+    def update_user(
+            user_id,
+            full_name=None,
+            email=None,
+            password=None,
+            profile_photo=None
+    ):
+
+        conn = connect()
+        cursor = conn.cursor()
+
+        fields = []
+        values = []
+
+
+        if full_name is not None:
+
+            fields.append(
+                "full_name = ?"
+            )
+
+            values.append(full_name)
+
+
+        if email is not None:
+
+            fields.append(
+                "email = ?"
+            )
+
+            values.append(email)
+
+
+        if password is not None:
+
+            fields.append(
+                "password = ?"
+            )
+
+            values.append(password)
+
+
+        if profile_photo is not None:
+
+            fields.append(
+                "profile_photo = ?"
+            )
+
+            values.append(profile_photo)
+
+
+        if not fields:
+
+            conn.close()
+
+            return True
+
+
+        values.append(user_id)
+
+
+        cursor.execute(
+            f"""
+            UPDATE users
+            SET {", ".join(fields)}
+            WHERE id = ?
+            """,
+            values
+        )
+
+
+        conn.commit()
+
+        conn.close()
+
+        return True
+
+
+    # =====================================================
+    # UPDATE PROFESSIONAL DATA
+    # =====================================================
+
+    @staticmethod
+    def update_profile(
+            user_id,
+            specialty=None,
+            license_number=None,
+            institution=None,
+            practice_area=None,
+            phone=None,
+            professional_email=None
+    ):
+
+        conn = connect()
+        cursor = conn.cursor()
+
+        fields = []
+        values = []
+
+
+        if specialty is not None:
+
+            fields.append(
+                "specialty = ?"
+            )
+
+            values.append(specialty)
+
+
+        if license_number is not None:
+
+            fields.append(
+                "license_number = ?"
+            )
+
+            values.append(license_number)
+
+
+        if institution is not None:
+
+            fields.append(
+                "institution = ?"
+            )
+
+            values.append(institution)
+
+
+        if practice_area is not None:
+
+            fields.append(
+                "practice_area = ?"
+            )
+
+            values.append(practice_area)
+
+
+        if phone is not None:
+
+            fields.append(
+                "phone = ?"
+            )
+
+            values.append(phone)
+
+
+        if professional_email is not None:
+
+            fields.append(
+                "professional_email = ?"
+            )
+
+            values.append(professional_email)
+
+
+        if not fields:
+
+            conn.close()
+
+            return True
+
+
+        values.append(user_id)
+
+
+        cursor.execute(
+            f"""
+            UPDATE professionals
+
+            SET {", ".join(fields)}
+
+            WHERE user_id = ?
+            """,
+            values
+        )
+
+
+        conn.commit()
+
+        conn.close()
+
+        return True
+
+
+    # =====================================================
+    # GET NEXT APPOINTMENT
+    # =====================================================
 
     @staticmethod
     def get_next_appointment(user_id):
@@ -161,6 +382,10 @@ class ProfessionalModel:
         return None
 
 
+    # =====================================================
+    # GET RECENT APPOINTMENTS
+    # =====================================================
+
     @staticmethod
     def get_recent_appointments(user_id):
 
@@ -204,6 +429,10 @@ class ProfessionalModel:
             for item in data
         ]
 
+
+    # =====================================================
+    # GET UPCOMING APPOINTMENTS
+    # =====================================================
 
     @staticmethod
     def get_upcoming_appointments(user_id):
@@ -250,6 +479,10 @@ class ProfessionalModel:
         ]
 
 
+    # =====================================================
+    # COUNT MESSAGES
+    # =====================================================
+
     @staticmethod
     def count_messages(user_id):
 
@@ -275,6 +508,10 @@ class ProfessionalModel:
         return result["total"]
 
 
+    # =====================================================
+    # COUNT NOTIFICATIONS
+    # =====================================================
+
     @staticmethod
     def count_notifications(user_id):
 
@@ -298,3 +535,4 @@ class ProfessionalModel:
         conn.close()
 
         return result["total"]
+

@@ -46,6 +46,9 @@ class AuthService:
             user["id"]
         )
 
+        print("PROFILE PHOTO NO LOGIN:", user["profile_photo"])
+
+
         return {
             "success": True,
             "message": "Login successful.",

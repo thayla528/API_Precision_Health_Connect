@@ -7,6 +7,12 @@ import secrets
 from services.email.email_service import EmailService
 
 
+from database.administrators.administrator_entity_model import (
+    AdministratorEntityModel
+)
+
+from services.audit.audit_service import AuditService
+
 class InvitationService:
 
     def __init__(self):
@@ -14,6 +20,10 @@ class InvitationService:
         self.invitation_model = InvitationModel()
 
         self.email_service = EmailService()
+
+        self.audit_service = AuditService()
+
+        self.administrator_model = AdministratorEntityModel()
 
 
     # =====================================================
@@ -133,6 +143,36 @@ class InvitationService:
             administrator_id
 
         )
+
+        # =================================================
+        # REGISTRAR AUDITORIA
+        # =================================================
+
+        administrator = self.administrator_model.get_by_id(
+            administrator_id
+        )
+
+        if administrator:
+            self.audit_service.register(
+
+                administrator["user_id"],
+
+                "APPROVE_INVITATION",
+
+                "invitations",
+
+                invitation_id,
+
+                {
+                    "status": "pending"
+                },
+
+                {
+                    "status": "approved",
+                    "approved_by": administrator_id
+                }
+
+            )
 
 
         # =================================================
@@ -466,6 +506,36 @@ class InvitationService:
             administrator_id
 
         )
+
+        # =================================================
+        # REGISTRAR AUDITORIA
+        # =================================================
+
+        administrator = self.administrator_model.get_by_id(
+            administrator_id
+        )
+
+        if administrator:
+            self.audit_service.register(
+
+                administrator["user_id"],
+
+                "REJECT_INVITATION",
+
+                "invitations",
+
+                invitation_id,
+
+                {
+                    "status": "pending"
+                },
+
+                {
+                    "status": "rejected",
+                    "approved_by": administrator_id
+                }
+
+            )
 
 
         return {

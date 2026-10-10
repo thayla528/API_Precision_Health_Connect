@@ -4,7 +4,7 @@ from database.administrators.administrator_entity_model import (
     AdministratorEntityModel
 )
 
-
+from services.audit.audit_service import AuditService
 
 from services.users.user_service import UserService
 
@@ -20,6 +20,8 @@ administrator_api_bp = Blueprint(
 )
 
 user_service = UserService()
+
+audit_service = AuditService()
 
 
 @administrator_api_bp.route(
@@ -113,6 +115,112 @@ def get_administrators():
             }
             for administrator in result["administrators"]
         ]
+
+    }), 200
+
+## =====================================================
+# LISTAR LOGS DE AUDITORIA
+# =====================================================
+
+@administrator_api_bp.route(
+    "/admin/logs",
+    methods=["GET"]
+)
+@jwt_required()
+@role_required("administrator")
+def get_audit_logs():
+
+    search = request.args.get(
+        "search",
+        default=None,
+        type=str
+    )
+
+    action = request.args.get(
+        "action",
+        default=None,
+        type=str
+    )
+
+    page = request.args.get(
+        "page",
+        default=1,
+        type=int
+    )
+
+    per_page = request.args.get(
+        "per_page",
+        default=10,
+        type=int
+    )
+
+
+    # =================================================
+    # VALIDAR PAGINAÇÃO
+    # =================================================
+
+    if page < 1:
+        page = 1
+
+    if per_page < 1:
+        per_page = 10
+
+    if per_page > 100:
+        per_page = 100
+
+
+    # =================================================
+    # LIMPAR BUSCA
+    # =================================================
+
+    if search:
+
+        search = search.strip()
+
+        if not search:
+            search = None
+
+
+    # =================================================
+    # BUSCAR LOGS
+    # =================================================
+
+    result = audit_service.get_logs(
+
+        search=search,
+
+        action=action,
+
+        page=page,
+
+        per_page=per_page
+
+    )
+
+
+    # =================================================
+    # RESPOSTA
+    # =================================================
+
+    return jsonify({
+
+        "success": True,
+
+        "logs": result["logs"],
+
+        "total": result["total"],
+
+        "pagination": {
+
+            "page": result["page"],
+
+            "per_page": result["per_page"],
+
+            "total": result["total"],
+
+            "total_pages": result["total_pages"]
+
+        }
 
     }), 200
 
@@ -231,6 +339,16 @@ def update_administrator(administrator_id):
 @role_required("administrator")
 def create_administrator():
 
+    # =====================================================
+    # ADMINISTRADOR QUE ESTÁ CRIANDO O CONVITE
+    # =====================================================
+
+    admin_id = get_jwt_identity()
+
+    # =====================================================
+    # RECEBER DADOS
+    # =====================================================
+
     data = request.get_json(silent=True)
 
     if not data:
@@ -239,22 +357,37 @@ def create_administrator():
             "message": "Dados não enviados."
         }), 400
 
+    # =====================================================
+    # DADOS DO NOVO ADMINISTRADOR
+    # =====================================================
+
     full_name = data.get("full_name")
     email = data.get("email")
-    password = data.get("password")
-    profile_photo = data.get("profile_photo")
     phone = data.get("phone")
+    profile_photo = data.get("profile_photo")
+
+    # =====================================================
+    # CRIAR CONVITE
+    # =====================================================
 
     result = user_service.create_administrator(
+        admin_id=admin_id,
         full_name=full_name,
         email=email,
-        password=password,
         profile_photo=profile_photo,
         phone=phone
     )
 
+    # =====================================================
+    # ERRO
+    # =====================================================
+
     if not result["success"]:
         return jsonify(result), 400
+
+    # =====================================================
+    # SUCESSO
+    # =====================================================
 
     return jsonify(result), 201
 

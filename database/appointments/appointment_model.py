@@ -1,9 +1,11 @@
-
 from database.bank import connect
 
 
 class AppointmentModel:
 
+    # =====================================================
+    # CREATE APPOINTMENT
+    # =====================================================
 
     @staticmethod
     def create(
@@ -19,9 +21,30 @@ class AppointmentModel:
         conn = connect()
         cursor = conn.cursor()
 
+        try:
 
-        cursor.execute("""
-            INSERT INTO appointments (
+            cursor.execute("""
+                INSERT INTO appointments (
+
+                    patient_id,
+
+                    professional_id,
+
+                    appointment_date,
+
+                    appointment_reason,
+
+                    status,
+
+                    meeting_link,
+
+                    notes
+
+                )
+
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+
+            """, (
 
                 patient_id,
 
@@ -37,41 +60,22 @@ class AppointmentModel:
 
                 notes
 
-            )
+            ))
 
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            conn.commit()
 
-        """, (
+            appointment_id = cursor.lastrowid
 
-            patient_id,
+            return appointment_id
 
-            professional_id,
+        finally:
 
-            appointment_date,
-
-            appointment_reason,
-
-            status,
-
-            meeting_link,
-
-            notes
-
-        ))
+            conn.close()
 
 
-        conn.commit()
-
-
-        appointment_id = cursor.lastrowid
-
-
-        conn.close()
-
-
-        return appointment_id
-
-
+    # =====================================================
+    # GET APPOINTMENT BY ID
+    # =====================================================
 
     @staticmethod
     def get_by_id(appointment_id):
@@ -79,30 +83,30 @@ class AppointmentModel:
         conn = connect()
         cursor = conn.cursor()
 
+        try:
 
-        cursor.execute("""
-            SELECT *
+            cursor.execute("""
+                SELECT *
 
-            FROM appointments
+                FROM appointments
 
-            WHERE id = ?
+                WHERE id = ?
 
-        """, (
-            appointment_id,
-        ))
+            """, (
+                appointment_id,
+            ))
 
+            appointment = cursor.fetchone()
 
-        appointment = cursor.fetchone()
+            return appointment
 
+        finally:
 
-        conn.close()
+            conn.close()
 
-
-        return appointment
-
-
-
-
+    # =====================================================
+    # GET APPOINTMENTS BY PATIENT
+    # =====================================================
 
     @staticmethod
     def get_by_patient(patient_id):
@@ -110,32 +114,51 @@ class AppointmentModel:
         conn = connect()
         cursor = conn.cursor()
 
+        try:
 
-        cursor.execute("""
-            SELECT *
+            cursor.execute("""
+                           SELECT appointments.id,
+                                  appointments.patient_id,
+                                  appointments.professional_id,
+                                  appointments.appointment_date,
+                                  appointments.appointment_reason,
+                                  appointments.status,
+                                  appointments.meeting_link,
+                                  appointments.notes,
+                                  appointments.created_at,
 
-            FROM appointments
+                                  users.full_name     AS professional_name,
+                                  users.profile_photo AS professional_photo,
 
-            WHERE patient_id = ?
+                                  professionals.specialty
 
-            ORDER BY appointment_date DESC
+                           FROM appointments
 
-        """, (
-            patient_id,
-        ))
+                                    INNER JOIN professionals
+                                               ON professionals.id = appointments.professional_id
 
+                                    INNER JOIN users
+                                               ON users.id = professionals.user_id
 
-        appointments = cursor.fetchall()
+                           WHERE appointments.patient_id = ?
 
+                           ORDER BY appointments.appointment_date ASC
 
-        conn.close()
+                           """, (
+                               patient_id,
+                           ))
 
+            appointments = cursor.fetchall()
 
-        return appointments
+            return appointments
 
+        finally:
 
+            conn.close()
 
-
+    # =====================================================
+    # GET APPOINTMENTS BY PROFESSIONAL
+    # =====================================================
 
     @staticmethod
     def get_by_professional(professional_id):
@@ -143,32 +166,90 @@ class AppointmentModel:
         conn = connect()
         cursor = conn.cursor()
 
+        try:
 
-        cursor.execute("""
-            SELECT *
+            cursor.execute("""
+                           SELECT appointments.id,
+                                  appointments.patient_id,
+                                  appointments.professional_id,
+                                  appointments.appointment_date,
+                                  appointments.appointment_reason,
+                                  appointments.status,
+                                  appointments.meeting_link,
+                                  appointments.notes,
+                                  appointments.created_at,
 
-            FROM appointments
+                                  users.full_name     AS patient_name,
+                                  users.profile_photo AS patient_photo
 
-            WHERE professional_id = ?
+                           FROM appointments
 
-            ORDER BY appointment_date DESC
+                                    INNER JOIN patients
+                                               ON patients.id = appointments.patient_id
 
-        """, (
-            professional_id,
-        ))
+                                    INNER JOIN users
+                                               ON users.id = patients.user_id
+
+                           WHERE appointments.professional_id = ?
+
+                           ORDER BY appointments.appointment_date ASC
+
+                           """, (
+                               professional_id,
+                           ))
+
+            appointments = cursor.fetchall()
+
+            return appointments
+
+        finally:
+
+            conn.close()
+
+    # =====================================================
+    # RESCHEDULE APPOINTMENT
+    # =====================================================
+
+    @staticmethod
+    def reschedule(
+            appointment_id,
+            appointment_date
+    ):
+
+        conn = connect()
+        cursor = conn.cursor()
+
+        try:
+
+            cursor.execute("""
+                           UPDATE appointments
+
+                           SET appointment_date = ?
+
+                           WHERE id = ?
+
+                           """, (
+
+                               appointment_date,
+
+                               appointment_id
+
+                           ))
+
+            conn.commit()
+
+            rows_updated = cursor.rowcount
+
+            return rows_updated
+
+        finally:
+
+            conn.close()
 
 
-        appointments = cursor.fetchall()
-
-
-        conn.close()
-
-
-        return appointments
-
-
-
-
+    # =====================================================
+    # GET ALL APPOINTMENTS
+    # =====================================================
 
     @staticmethod
     def get_all():
@@ -176,28 +257,29 @@ class AppointmentModel:
         conn = connect()
         cursor = conn.cursor()
 
+        try:
 
-        cursor.execute("""
-            SELECT *
+            cursor.execute("""
+                SELECT *
 
-            FROM appointments
+                FROM appointments
 
-            ORDER BY appointment_date DESC
+                ORDER BY appointment_date DESC
 
-        """)
+            """)
 
+            appointments = cursor.fetchall()
 
-        appointments = cursor.fetchall()
+            return appointments
 
+        finally:
 
-        conn.close()
-
-
-        return appointments
-
-
+            conn.close()
 
 
+    # =====================================================
+    # UPDATE APPOINTMENT STATUS
+    # =====================================================
 
     @staticmethod
     def update_status(
@@ -208,37 +290,37 @@ class AppointmentModel:
         conn = connect()
         cursor = conn.cursor()
 
+        try:
 
-        cursor.execute("""
-            UPDATE appointments
+            cursor.execute("""
+                UPDATE appointments
 
-            SET status = ?
+                SET status = ?
 
-            WHERE id = ?
+                WHERE id = ?
 
-        """, (
+            """, (
 
-            status,
+                status,
 
-            appointment_id
+                appointment_id
 
-        ))
+            ))
 
+            conn.commit()
 
-        conn.commit()
+            rows_updated = cursor.rowcount
 
+            return rows_updated
 
-        rows_updated = cursor.rowcount
+        finally:
 
-
-        conn.close()
-
-
-        return rows_updated
-
+            conn.close()
 
 
-
+    # =====================================================
+    # DELETE APPOINTMENT
+    # =====================================================
 
     @staticmethod
     def delete(appointment_id):
@@ -246,63 +328,71 @@ class AppointmentModel:
         conn = connect()
         cursor = conn.cursor()
 
+        try:
 
-        cursor.execute("""
-            DELETE FROM appointments
+            cursor.execute("""
+                DELETE FROM appointments
 
-            WHERE id = ?
+                WHERE id = ?
 
-        """, (
-            appointment_id,
-        ))
+            """, (
+                appointment_id,
+            ))
+
+            conn.commit()
+
+            rows_deleted = cursor.rowcount
+
+            return rows_deleted
+
+        finally:
+
+            conn.close()
 
 
-        conn.commit()
-
-
-        rows_deleted = cursor.rowcount
-
-
-        conn.close()
-
-
-        return rows_deleted
+    # =====================================================
+    # CHECK EXISTING APPOINTMENT
+    # =====================================================
 
     @staticmethod
     def appointment_exists(
-            patient_id,
-            professional_id,
-            appointment_date
+        patient_id,
+        professional_id,
+        appointment_date
     ):
+
         conn = connect()
         cursor = conn.cursor()
 
-        cursor.execute("""
-            SELECT *
+        try:
 
-            FROM appointments
+            cursor.execute("""
+                SELECT *
 
-            WHERE patient_id = ?
+                FROM appointments
 
-            AND professional_id = ?
+                WHERE patient_id = ?
 
-            AND appointment_date = ?
+                AND professional_id = ?
 
-            AND status != 'cancelled'
+                AND appointment_date = ?
 
-        """, (
+                AND status != 'cancelled'
 
-            patient_id,
+            """, (
 
-            professional_id,
+                patient_id,
 
-            appointment_date
+                professional_id,
 
-        ))
+                appointment_date
 
-        appointment = cursor.fetchone()
+            ))
 
-        conn.close()
+            appointment = cursor.fetchone()
 
-        return appointment
+            return appointment
 
+        finally:
+
+            conn.close()

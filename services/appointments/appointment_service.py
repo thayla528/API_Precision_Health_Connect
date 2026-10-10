@@ -159,6 +159,133 @@ class AppointmentService:
 
         }
 
+    # =====================================================
+    # CREATE APPOINTMENT BY PROFESSIONAL
+    # =====================================================
+
+    def create_professional_appointment(
+            self,
+            user_id,
+            patient_id,
+            appointment_date,
+            appointment_reason=None,
+            notes=None
+    ):
+
+        # =================================================
+        # BUSCAR PROFISSIONAL
+        # =================================================
+
+        professional = (
+            self.professional_model
+            .get_by_user_id(
+                user_id
+            )
+        )
+
+        if not professional:
+            return {
+                "success": False,
+                "message": "Professional profile not found."
+            }
+
+        # =================================================
+        # BUSCAR PACIENTE
+        # =================================================
+
+        patient = (
+            self.patient_model
+            .get_by_id(
+                patient_id
+            )
+        )
+
+        if not patient:
+            return {
+                "success": False,
+                "message": "Patient not found."
+            }
+
+        # =================================================
+        # VERIFICAR RELACIONAMENTO
+        # =================================================
+
+        relationship = (
+            self.relationship_model
+            .relationship_exists(
+                patient_id,
+                professional["id"]
+            )
+        )
+
+        if not relationship:
+            return {
+                "success": False,
+                "message": "Patient is not linked to this professional."
+            }
+
+        # =================================================
+        # VERIFICAR CONSULTA DUPLICADA
+        # =================================================
+
+        existing = (
+            self.appointment_model
+            .appointment_exists(
+                patient_id,
+                professional["id"],
+                appointment_date
+            )
+        )
+
+        if existing:
+            return {
+                "success": False,
+                "message": "Appointment already exists for this date."
+            }
+
+        # =================================================
+        # CRIAR CONSULTA
+        # =================================================
+
+        appointment_id = (
+            self.appointment_model
+            .create(
+                patient_id,
+                professional["id"],
+                appointment_date,
+                appointment_reason,
+                None,
+                notes,
+                "pending"
+            )
+        )
+
+        # =================================================
+        # NOTIFICAR PACIENTE
+        # =================================================
+
+        self.notification_service.create_notification(
+
+            patient["user_id"],
+
+            "New appointment scheduled",
+
+            "A professional scheduled a new appointment for you.",
+
+            "appointment"
+
+        )
+
+        return {
+
+            "success": True,
+
+            "message": "Appointment created successfully.",
+
+            "appointment_id": appointment_id
+
+        }
+
 
 
 
@@ -193,6 +320,112 @@ class AppointmentService:
                 for item in appointments
 
             ]
+
+        }
+
+    # =====================================================
+    # RESCHEDULE APPOINTMENT
+    # =====================================================
+
+    def reschedule_appointment(
+            self,
+            appointment_id,
+            appointment_date,
+            reason=None
+    ):
+
+        appointment = (
+            self.appointment_model
+            .get_by_id(
+                appointment_id
+            )
+        )
+
+        if not appointment:
+            return {
+
+                "success": False,
+
+                "message": "Appointment not found."
+
+            }
+
+        if appointment["status"] in [
+            "cancelled",
+            "completed"
+        ]:
+            return {
+
+                "success": False,
+
+                "message": "Appointment cannot be rescheduled."
+
+            }
+
+        existing = (
+            self.appointment_model
+            .appointment_exists(
+                appointment["patient_id"],
+                appointment["professional_id"],
+                appointment_date
+            )
+        )
+
+        if existing and existing["id"] != appointment_id:
+            return {
+
+                "success": False,
+
+                "message": "Another appointment already exists for this date."
+
+            }
+
+        updated = (
+            self.appointment_model
+            .reschedule(
+                appointment_id,
+                appointment_date
+            )
+        )
+
+        if updated == 0:
+            return {
+
+                "success": False,
+
+                "message": "Appointment was not rescheduled."
+
+            }
+
+        # =================================================
+        # NOTIFICAR PACIENTE
+        # =================================================
+
+        patient = (
+            self.patient_model
+            .get_by_id(
+                appointment["patient_id"]
+            )
+        )
+
+        if patient:
+            self.notification_service.create_notification(
+
+                patient["user_id"],
+
+                "Appointment rescheduled",
+
+                "Your appointment was rescheduled by the professional.",
+
+                "appointment"
+
+            )
+
+        return {
+
+            "success": True,
+
+            "message": "Appointment rescheduled successfully."
 
         }
 

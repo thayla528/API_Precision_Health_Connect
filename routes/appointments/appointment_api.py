@@ -109,8 +109,174 @@ def create_appointment():
     return jsonify(result), 201
 
 
+# =====================================================
+# CREATE APPOINTMENT (PROFESSIONAL)
+# =====================================================
+
+@appointment_bp.route(
+    "/professional/create",
+    methods=["POST"]
+)
+@jwt_required()
+@role_required("professional")
+def create_professional_appointment():
+
+    data = request.get_json()
+
+    if not data:
+
+        return jsonify({
+
+            "success": False,
+
+            "message": "JSON body is required."
+
+        }), 400
+
+    user_id = get_jwt_identity()
+
+    patient_id = data.get(
+        "patient_id"
+    )
+
+    appointment_date = data.get(
+        "appointment_date"
+    )
+
+    if not patient_id or not appointment_date:
+
+        return jsonify({
+
+            "success": False,
+
+            "message": (
+                "patient_id and appointment_date are required."
+            )
+
+        }), 400
+
+    result = service.create_professional_appointment(
+
+        user_id,
+
+        patient_id,
+
+        appointment_date,
+
+        data.get("appointment_reason"),
+
+        data.get("notes")
+
+    )
+
+    if not result["success"]:
+
+        return jsonify(result), 400
+
+    return jsonify(result), 201
 
 
+# =====================================================
+# RESCHEDULE APPOINTMENT
+# =====================================================
+
+@appointment_bp.route(
+    "/<int:appointment_id>/reschedule",
+    methods=["PUT"]
+)
+@jwt_required()
+@role_required("professional")
+def reschedule_appointment(
+    appointment_id
+):
+
+    user_id = get_jwt_identity()
+
+    professional = (
+        service.professional_model
+        .get_by_user_id(
+            user_id
+        )
+    )
+
+    if not professional:
+
+        return jsonify({
+
+            "success": False,
+
+            "message": "Professional profile not found."
+
+        }), 404
+
+    appointment = (
+        service.appointment_model
+        .get_by_id(
+            appointment_id
+        )
+    )
+
+    if not appointment:
+
+        return jsonify({
+
+            "success": False,
+
+            "message": "Appointment not found."
+
+        }), 404
+
+    if appointment["professional_id"] != professional["id"]:
+
+        return jsonify({
+
+            "success": False,
+
+            "message": "Access denied."
+
+        }), 403
+
+    data = request.get_json()
+
+    if not data:
+
+        return jsonify({
+
+            "success": False,
+
+            "message": "JSON body is required."
+
+        }), 400
+
+    appointment_date = data.get(
+        "appointment_date"
+    )
+
+    if not appointment_date:
+
+        return jsonify({
+
+            "success": False,
+
+            "message": "appointment_date is required."
+
+        }), 400
+
+    result = service.reschedule_appointment(
+
+        appointment_id,
+
+        appointment_date,
+
+        data.get("reason")
+
+    )
+
+    if not result["success"]:
+
+        return jsonify(result), 400
+
+    return jsonify(result), 200
 
 # =====================================================
 # MY APPOINTMENTS
