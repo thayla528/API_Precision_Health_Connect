@@ -7,6 +7,7 @@ import os
 import uuid
 from werkzeug.utils import secure_filename
 from config import PROFILE_PHOTOS_FOLDER, ALLOWED_EXTENSIONS
+from routes.clinical_records import clinical_record_api
 
 from routes.prescription.prescription_api import prescription_bp
 
@@ -23,6 +24,7 @@ from routes.appointments.appointment_api import appointment_bp
 from routes.admin.administrator_api import administrator_api_bp
 
 
+
 from routes.notifications.notifications_api import notification_bp
 
 from routes.clinical_records.clinical_record_api import clinical_record_bp
@@ -37,6 +39,9 @@ from routes.users.token_api import token_bp
 from routes.users.logout_api import logout_bp
 
 from security.rate_limit import limiter
+
+from routes.institutions.institution_api import institution_bp
+from routes.exam.exam_api import exam_bp
 
 
 
@@ -94,6 +99,10 @@ app.register_blueprint(verification_api_bp)
 app.register_blueprint(administrator_api_bp)
 
 app.register_blueprint(password_reset_api_bp)
+
+app.register_blueprint(exam_bp)
+app.register_blueprint(institution_bp)
+
 
 print(app.url_map)
 

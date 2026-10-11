@@ -324,6 +324,155 @@ def create_tables():
     """)
 
 
+    # ---------------- INSTITUTIONS TABLE ----------------
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS institutions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+            name TEXT NOT NULL,
+            institution_type TEXT,
+
+            phone TEXT,
+            email TEXT,
+
+            postal_code TEXT,
+            address TEXT,
+            house_number TEXT,
+            address_line2 TEXT,
+            neighborhood TEXT,
+            city TEXT,
+            state TEXT,
+
+            latitude REAL CHECK (
+                latitude IS NULL OR latitude BETWEEN -90 AND 90
+            ),
+
+            longitude REAL CHECK (
+                longitude IS NULL OR longitude BETWEEN -180 AND 180
+            ),
+
+            active INTEGER NOT NULL DEFAULT 1
+                CHECK (active IN (0, 1)),
+
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    # ---------------- PROFESSIONAL INSTITUTIONS TABLE ----------------
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS professional_institutions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+            professional_id INTEGER NOT NULL,
+            institution_id INTEGER NOT NULL,
+
+            is_primary INTEGER NOT NULL DEFAULT 0
+                CHECK (is_primary IN (0, 1)),
+
+            active INTEGER NOT NULL DEFAULT 1
+                CHECK (active IN (0, 1)),
+
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+            UNIQUE (professional_id, institution_id),
+
+            FOREIGN KEY (professional_id)
+                REFERENCES professionals(id),
+
+            FOREIGN KEY (institution_id)
+                REFERENCES institutions(id)
+        )
+    """)
+
+    # ---------------- EXAMS TABLE ----------------
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS exams (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+            patient_id INTEGER NOT NULL,
+            professional_id INTEGER NOT NULL,
+
+            appointment_id INTEGER,
+            institution_id INTEGER,
+            result_document_id INTEGER,
+
+            exam_name TEXT NOT NULL,
+            exam_type TEXT,
+            description TEXT,
+            preparation_instructions TEXT,
+
+            requested_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            scheduled_at DATETIME,
+            completed_at DATETIME,
+
+            status TEXT NOT NULL DEFAULT 'requested'
+                CHECK (
+                    status IN (
+                        'requested',
+                        'scheduled',
+                        'in_progress',
+                        'completed',
+                        'cancelled'
+                    )
+                ),
+
+            notes TEXT,
+
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+            FOREIGN KEY (patient_id)
+                REFERENCES patients(id),
+
+            FOREIGN KEY (professional_id)
+                REFERENCES professionals(id),
+
+            FOREIGN KEY (appointment_id)
+                REFERENCES appointments(id),
+
+            FOREIGN KEY (institution_id)
+                REFERENCES institutions(id),
+
+            FOREIGN KEY (result_document_id)
+                REFERENCES medical_documents(id)
+        )
+    """)
+
+    # ---------------- INDEXES ----------------
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_institutions_location
+        ON institutions(latitude, longitude)
+    """)
+
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_professional_institutions_professional
+        ON professional_institutions(professional_id)
+    """)
+
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_professional_institutions_institution
+        ON professional_institutions(institution_id)
+    """)
+
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_exams_patient
+        ON exams(patient_id)
+    """)
+
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_exams_professional
+        ON exams(professional_id)
+    """)
+
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_exams_institution
+        ON exams(institution_id)
+    """)
+
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_exams_appointment
+        ON exams(appointment_id)
+    """)
+
 
     # ---------------- NOTIFICATIONS TABLE ----------------
     cursor.execute("""
@@ -455,19 +604,6 @@ def create_tables():
                 ON DELETE CASCADE
         )
     """)
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
     conn.commit()

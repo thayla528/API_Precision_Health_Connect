@@ -142,30 +142,28 @@ class PatientProfessionalModel:
 
         return relationships
 
-
-
     @staticmethod
     def relationship_exists(patient_id, professional_id):
         conn = connect()
         cursor = conn.cursor()
 
-        cursor.execute("""
-            SELECT *
-            FROM patient_professional
-            WHERE patient_id = ?
-            AND professional_id = ?
-            AND status = 'active'
-        """, (
-            patient_id,
-            professional_id
-        ))
+        try:
+            cursor.execute("""
+                SELECT id
+                FROM patient_professional
+                WHERE patient_id = ?
+                  AND professional_id = ?
+            """, (
+                patient_id,
+                professional_id
+            ))
 
-        relationship = cursor.fetchone()
+            relationship = cursor.fetchone()
 
-        conn.close()
+            return relationship
 
-        return relationship
-
+        finally:
+            conn.close()
 
     @staticmethod
     def deactivate(relationship_id):
